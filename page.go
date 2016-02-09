@@ -54,8 +54,10 @@ func pageGallery(w http.ResponseWriter, r *http.Request, p httprouter.Params) *h
 }
 
 func pageFilesDirectory(w http.ResponseWriter, r *http.Request, p httprouter.Params) *httphelper.HandlerError {
-	filepath := path.Join(FlagFolderGallery, p.ByName("path"))
-	files, err := ioutil.ReadDir(filepath)
+	l := httphelper.NewHandlerLogEntry(r)
+
+	urlfilepath := path.Join(FlagFolderGallery, p.ByName("path"))
+	files, err := ioutil.ReadDir(urlfilepath)
 	if err != nil {
 		return httphelper.NewHandlerErrorDef(errgo.Notef(err, "can not read from directory"))
 	}
@@ -64,19 +66,56 @@ func pageFilesDirectory(w http.ResponseWriter, r *http.Request, p httprouter.Par
   <html lang="en">
   <head>
   <meta charset="utf-8">
-  <title>Filehasher - `+filepath+`</title>
+  <style>
+    div.img {
+        margin: 5px;
+        border: 1px solid #ccc;
+        float: left;
+        width: 180px;
+    }
+
+    div.img:hover {
+        border: 1px solid #777;
+    }
+
+    div.img img {
+        width: 100%;
+        height: auto;
+    }
+
+    div.desc {
+        padding: 15px;
+        text-align: center;
+    }
+  </style>
+	<title>GoGallery - `+urlfilepath+`</title>
   </head>
   <body>`)
 	for _, file := range files {
-		filepath := path.Join(r.URL.Path, file.Name())
+		pathfile := path.Join(r.URL.Path, file.Name())
 		if file.IsDir() {
-			fmt.Fprintf(w, "Link: <a href="+filepath+">"+file.Name()+"</a> <b>[d]</b>")
+			fmt.Fprintf(w, "<a href="+pathfile+">"+file.Name()+"</a>")
 			fmt.Fprintf(w, "<br>\n")
+		} else {
+			continue
+		}
+	}
+
+	for _, file := range files {
+		pathfile := path.Join(r.URL.Path, file.Name())
+		if file.IsDir() {
 			continue
 		}
 
-		fmt.Fprintf(w, "Link: <a href="+filepath+">"+file.Name()+"</a>")
-		fmt.Fprintf(w, "<br>\n")
+		ext := filepath.Ext(pathfile)
+		l.Debug("Filepath Extention: ", ext)
+
+		switch ext {
+		case ".jpeg", ".JPEG", ".jpg", ".JPG":
+			fmt.Fprintf(w, `<a href=`+pathfile+`><img src="`+pathfile+`?width=100&height=100"></a>`)
+		case ".png", ".PNG":
+			fmt.Fprintf(w, `<a href=`+pathfile+`><img src="`+pathfile+`?width=100&height=100"></a>`)
+		}
 	}
 	fmt.Fprintf(w, `</body>
   </html>`)
@@ -102,7 +141,12 @@ func pageFilesRegular(w http.ResponseWriter, r *http.Request, p httprouter.Param
 		if err == nil {
 			return nil
 		}
+		cachefile := filepath.Join(FlagFolderCache, p.ByName("path"), values.Get("width"), values.Get("height")+".jpg")
 		l.Warning(errgo.Notef(err.Error, "can not generate thumbnail for file"))
+		nerr := os.Remove(cachefile)
+		if nerr != nil {
+			l.Warning(errgo.Notef(nerr, "can not generate broken thumbnail cache file"))
+		}
 	}
 
 	filepath := path.Join(FlagFolderGallery, p.ByName("path"))
@@ -218,7 +262,7 @@ func pageFilesRegularThumbnail(w http.ResponseWriter, r *http.Request, p httprou
 
 	writer := io.MultiWriter(w, cache)
 
-	thumbnail := resize.Thumbnail(width, height, img, resize.Lanczos3)
+	thumbnail := resize.Thumbnail(width, height, img, resize.MitchellNetravali)
 	err = jpeg.Encode(writer, thumbnail, nil)
 	if err != nil {
 		return httphelper.NewHandlerErrorDef(errgo.Notef(err, "can not encode image to jpeg"))
