@@ -20,7 +20,8 @@ var (
 	FlagBindingGallery string
 	FlagBindingMetrics string
 
-	FlagFolder string
+	FlagFolderGallery string
+	FlagFolderCache   string
 
 	FlagLogLevel string
 	FlagLogFile  string
@@ -34,7 +35,10 @@ func init() {
 		"the network binding of the metrics")
 
 	// Folder
-	flag.StringVar(&FlagFolder, "files.path", "gallery",
+	flag.StringVar(&FlagFolderGallery, "folder.gallery", "gallery",
+		"the folder from which to serve the gallery")
+	// Folder
+	flag.StringVar(&FlagFolderCache, "folder.cache", ".cache",
 		"the folder from which to serve the gallery")
 
 	// Log

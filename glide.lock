@@ -1,8 +1,8 @@
-hash: d9e0277d36ab1c4ba9fc0d889f4cf945f6c73012e631afc0b812a2f2aa2a0023
-updated: 2016-02-09T20:52:35.23525201+01:00
+hash: bd09211184f736607d4189313fdf1746686ff3b41497fe4c47a615fd88296892
+updated: 2016-02-09T21:05:39.98492522+01:00
 imports:
 - name: github.com/AlexanderThaller/httphelper
-  version: 0e3e67210428afe6f1af3dd30746af2dedb03229
+  version: 6c8dab298930250b3dd276643892b5d8eff64862
 - name: github.com/beorn7/perks
   version: b965b613227fddccbfffe13eae360ed3fa822f8d
   subpackages:
@@ -20,6 +20,8 @@ imports:
   version: d0c3fe89de86839aecf2e0579c40ba3bb336a453
   subpackages:
   - pbutil
+- name: github.com/nfnt/resize
+  version: 4d93a29130b1b6aba503e2aa8b50f516213ea80e
 - name: github.com/prometheus/client_golang
   version: 15006a7ed88e73201c4e6142a2e66b54ae5fdf00
   subpackages:

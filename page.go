@@ -1,17 +1,23 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"image"
+	"image/jpeg"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
+	"path/filepath"
+	"strconv"
 
 	"github.com/AlexanderThaller/httphelper"
-	"github.com/Unknwon/log"
 	"github.com/juju/errgo"
 	"github.com/julienschmidt/httprouter"
+	"github.com/nfnt/resize"
 )
 
 func pageRoot(w http.ResponseWriter, r *http.Request, p httprouter.Params) *httphelper.HandlerError {
@@ -20,8 +26,10 @@ func pageRoot(w http.ResponseWriter, r *http.Request, p httprouter.Params) *http
 }
 
 func pageGallery(w http.ResponseWriter, r *http.Request, p httprouter.Params) *httphelper.HandlerError {
-	filepath := path.Join(FlagFolder, p.ByName("path"))
-	log.Debug("Sending ", filepath)
+	l := httphelper.NewHandlerLogEntry(r)
+
+	filepath := path.Join(FlagFolderGallery, p.ByName("path"))
+	l.Debug("Sending ", filepath)
 
 	stat, err := os.Stat(filepath)
 	if err != nil {
@@ -29,12 +37,12 @@ func pageGallery(w http.ResponseWriter, r *http.Request, p httprouter.Params) *h
 	}
 
 	if stat.Mode().IsDir() {
-		log.Debug("Filetype: Directory")
+		l.Debug("Filetype: Directory")
 		return pageFilesDirectory(w, r, p)
 	}
 
 	if stat.Mode().IsRegular() {
-		log.Debug("Filetype: Regular")
+		l.Debug("Filetype: Regular")
 		return pageFilesRegular(w, r, p)
 	}
 
@@ -46,7 +54,7 @@ func pageGallery(w http.ResponseWriter, r *http.Request, p httprouter.Params) *h
 }
 
 func pageFilesDirectory(w http.ResponseWriter, r *http.Request, p httprouter.Params) *httphelper.HandlerError {
-	filepath := path.Join(FlagFolder, p.ByName("path"))
+	filepath := path.Join(FlagFolderGallery, p.ByName("path"))
 	files, err := ioutil.ReadDir(filepath)
 	if err != nil {
 		return httphelper.NewHandlerErrorDef(errgo.Notef(err, "can not read from directory"))
@@ -77,7 +85,27 @@ func pageFilesDirectory(w http.ResponseWriter, r *http.Request, p httprouter.Par
 }
 
 func pageFilesRegular(w http.ResponseWriter, r *http.Request, p httprouter.Params) *httphelper.HandlerError {
-	filepath := path.Join(FlagFolder, p.ByName("path"))
+	l := httphelper.NewHandlerLogEntry(r)
+
+	values, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil {
+		return httphelper.NewHandlerErrorDef(errgo.Notef(err, "can not parse values from query"))
+	}
+	width := values.Get("width")
+	height := values.Get("height")
+
+	l.Debug("width: ", width)
+	l.Debug("height: ", height)
+
+	if width != "" || height != "" {
+		err := pageFilesRegularThumbnail(w, r, p)
+		if err == nil {
+			return nil
+		}
+		l.Warning(errgo.Notef(err.Error, "can not generate thumbnail for file"))
+	}
+
+	filepath := path.Join(FlagFolderGallery, p.ByName("path"))
 
 	file, err := os.Open(filepath)
 	if err != nil {
@@ -96,6 +124,90 @@ func pageFilesRegular(w http.ResponseWriter, r *http.Request, p httprouter.Param
 	if err != nil {
 		return httphelper.NewHandlerErrorDef(errgo.Notef(err, "can not copy file to response writer"))
 	}
+
+	return nil
+}
+
+func pageFilesRegularThumbnail(w http.ResponseWriter, r *http.Request, p httprouter.Params) *httphelper.HandlerError {
+	l := httphelper.NewHandlerLogEntry(r)
+
+	values, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil {
+		return httphelper.NewHandlerErrorDef(errgo.Notef(err, "can not parse values from query"))
+	}
+
+	var width uint
+	if values.Get("width") != "" {
+		out, err := strconv.ParseUint(values.Get("width"), 10, 64)
+		if err != nil {
+			return httphelper.NewHandlerErrorDef(errgo.Notef(err, "can not parse width from parameters"))
+		}
+		width = uint(out)
+	}
+
+	var height uint
+	if values.Get("height") != "" {
+		out, err := strconv.ParseUint(values.Get("height"), 10, 64)
+		if err != nil {
+			return httphelper.NewHandlerErrorDef(errgo.Notef(err, "can not parse height from parameters"))
+		}
+		height = uint(out)
+	}
+
+	pathfile := path.Join(FlagFolderGallery, p.ByName("path"))
+
+	file, err := os.Open(pathfile)
+	if err != nil {
+		return httphelper.NewHandlerErrorDef(errgo.Notef(err, "can not open file from disk"))
+	}
+	defer file.Close()
+
+	ext := filepath.Ext(pathfile)
+	l.Debug("Filepath Extention: ", ext)
+
+	var img image.Image
+	switch ext {
+	case ".jpeg", ".JPEG", ".jpg", ".JPG":
+		img, err = jpeg.Decode(file)
+		if err != nil {
+			return httphelper.NewHandlerErrorDef(errgo.New("can not decode file as jpeg"))
+		}
+
+	default:
+		return httphelper.NewHandlerErrorDef(errgo.New("dont know how to decode image with extention " + ext))
+	}
+
+	l.Debug("Width: ", width)
+	l.Debug("Height: ", height)
+
+	buffer := new(bytes.Buffer)
+	thumbnail := resize.Thumbnail(width, height, img, resize.Lanczos3)
+	err = jpeg.Encode(buffer, thumbnail, nil)
+	if err != nil {
+		return httphelper.NewHandlerErrorDef(errgo.Notef(err, "can not encode image to jpeg"))
+	}
+
+	_, err = io.Copy(w, buffer)
+	if err != nil {
+		return httphelper.NewHandlerErrorDef(errgo.Notef(err, "can not copy cache file to response writer"))
+	}
+	w.Header().Set("Content-Type", "image/jpeg")
+
+	go func() {
+		cachefile := filepath.Join(FlagFolderCache, p.ByName("path"), values.Get("width"), values.Get("height")+".jpg")
+
+		err := os.MkdirAll(filepath.Dir(cachefile), 0755)
+		if err != nil {
+			l.Warning(errgo.Notef(err, "can not create cache dir for file"))
+			return
+		}
+
+		err = ioutil.WriteFile(cachefile, buffer.Bytes(), 0644)
+		if err != nil {
+			l.Warning(errgo.Notef(err, "can not write thumbnail to cache"))
+			return
+		}
+	}()
 
 	return nil
 }
