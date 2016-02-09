@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
+	"image/png"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -188,6 +189,11 @@ func pageFilesRegularThumbnail(w http.ResponseWriter, r *http.Request, p httprou
 	switch ext {
 	case ".jpeg", ".JPEG", ".jpg", ".JPG":
 		img, err = jpeg.Decode(file)
+		if err != nil {
+			return httphelper.NewHandlerErrorDef(errgo.New("can not decode file as jpeg"))
+		}
+	case ".png", ".PNG":
+		img, err = png.Decode(file)
 		if err != nil {
 			return httphelper.NewHandlerErrorDef(errgo.New("can not decode file as jpeg"))
 		}
