@@ -1,6 +1,6 @@
 [run]
 init_cmds = [
-	["make"],
+	["go", "build"],
 	["./gogallery"]
 ]									# Commands run in start
 watch_all = true					# Watch all sub-directories
@@ -12,7 +12,7 @@ build_delay = 1500					# Minimal interval to Trigger build event
 interrupt_timout = 15				# Time to wait until force kill
 cmds = [
 	["sleep", "0.1"],
-	["make"],
+	["go", "build"],
 	["./gogallery"]
 ]									# Commands to run
 

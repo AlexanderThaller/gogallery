@@ -4,7 +4,6 @@ import (
 	"flag"
 	"net/http"
 	"os"
-	"os/signal"
 
 	"github.com/AlexanderThaller/httphelper"
 	log "github.com/Sirupsen/logrus"
@@ -21,6 +20,8 @@ var (
 	FlagBindingGallery string
 	FlagBindingMetrics string
 
+	FlagFolder string
+
 	FlagLogLevel string
 	FlagLogFile  string
 )
@@ -28,9 +29,13 @@ var (
 func init() {
 	// Binding
 	flag.StringVar(&FlagBindingGallery, "binding.gallery", ":6112",
-		"the network binding of the service")
+		"the network binding of the gallery")
 	flag.StringVar(&FlagBindingMetrics, "binding.metrics", ":6113",
-		"the network binding of the service")
+		"the network binding of the metrics")
+
+	// Folder
+	flag.StringVar(&FlagFolder, "files.path", "gallery",
+		"the folder from which to serve the gallery")
 
 	// Log
 	flag.StringVar(&FlagLogLevel, "log.level", "info",
@@ -86,10 +91,7 @@ func main() {
 		}
 	}()
 
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
-
 	log.Debug("Waiting for interrupt signal")
-	<-signalChan
+	httphelper.WaitForStopSignal()
 	log.Info("Stopping")
 }
