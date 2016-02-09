@@ -4,7 +4,7 @@ import:
 - package: github.com/Sirupsen/logrus
 - package: github.com/juju/errgo
 - package: github.com/julienschmidt/httprouter
+- package: github.com/nfnt/resize
 - package: github.com/prometheus/client_golang
   subpackages:
   - /prometheus
-- package: github.com/nfnt/resize
