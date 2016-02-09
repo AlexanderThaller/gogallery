@@ -1,0 +1,10 @@
+hash: c83a57cecdfa41214dc7cba627c148beb392e53274243e07a71b6670bd6cd4cc
+updated: 2016-02-09T19:58:48.528783464+01:00
+imports:
+- name: github.com/Sirupsen/logrus
+  version: be52937128b38f1d99787bb476c789e2af1147f1
+- name: gopkg.in/airbrake/gobrake.v2
+  version: c9d51adc624b5cc4c1bf8de730a09af4878ffe2d
+- name: gopkg.in/gemnasium/logrus-airbrake-hook.v2
+  version: 31e6fd4bd5a98d8ee7673d24bc54ec73c31810dd
+devImports: []
