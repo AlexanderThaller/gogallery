@@ -68,11 +68,11 @@ func main() {
 		router.NotFound = httphelper.HandlerLoggerHTTP(httphelper.PageRouterNotFound)
 
 		// Root and Favicon
-		router.GET("/", httphelper.HandlerLoggerRouter(pageFiles))
+		router.GET("/", httphelper.HandlerLoggerRouter(pageRoot))
 		router.GET("/favicon.ico", httphelper.HandlerLoggerRouter(httphelper.PageMinimalFavicon))
 
 		// Gallery
-		router.GET("/gallery/*path", httphelper.HandlerLoggerRouter(pageFiles))
+		router.GET("/gallery/*path", httphelper.HandlerLoggerRouter(pageGallery))
 
 		log.Info("Start serving files on ", FlagBindingGallery)
 		log.Fatal(http.ListenAndServe(FlagBindingGallery, router))
