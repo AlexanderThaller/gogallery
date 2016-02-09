@@ -1,3 +1,9 @@
 package: github.com/AlexanderThaller/gogallery
 import:
+- package: github.com/AlexanderThaller/httphelper
 - package: github.com/Sirupsen/logrus
+- package: github.com/juju/errgo
+- package: github.com/julienschmidt/httprouter
+- package: github.com/prometheus/client_golang
+  subpackages:
+  - /prometheus

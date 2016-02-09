@@ -1,8 +1,49 @@
-hash: c83a57cecdfa41214dc7cba627c148beb392e53274243e07a71b6670bd6cd4cc
-updated: 2016-02-09T19:58:48.528783464+01:00
+hash: d9e0277d36ab1c4ba9fc0d889f4cf945f6c73012e631afc0b812a2f2aa2a0023
+updated: 2016-02-09T20:29:01.534229031+01:00
 imports:
+- name: github.com/AlexanderThaller/httphelper
+  version: 3f89c668659e78236ac7f4add71da444324a42d3
+- name: github.com/beorn7/perks
+  version: b965b613227fddccbfffe13eae360ed3fa822f8d
+  subpackages:
+  - quantile
+- name: github.com/golang/protobuf
+  version: b982704f8bb716bb608144408cff30e15fbde841
+  subpackages:
+  - proto
+  - proto/testdata
+- name: github.com/juju/errgo
+  version: 08cceb5d0b5331634b9826762a8fd53b29b86ad8
+- name: github.com/julienschmidt/httprouter
+  version: 2c34ec888a7359c0750064e0a4c8df360806c255
+- name: github.com/matttproud/golang_protobuf_extensions
+  version: d0c3fe89de86839aecf2e0579c40ba3bb336a453
+  subpackages:
+  - pbutil
+- name: github.com/prometheus/client_golang
+  version: 15006a7ed88e73201c4e6142a2e66b54ae5fdf00
+  subpackages:
+  - /prometheus
+  - prometheus
+- name: github.com/prometheus/client_model
+  version: fa8ad6fec33561be4280a8f0514318c79d7f6cb6
+  subpackages:
+  - go
+- name: github.com/prometheus/common
+  version: dba5e39d4516169e840def50e507ef5f21b985f9
+  subpackages:
+  - model
+  - expfmt
+  - internal/bitbucket.org/ww/goautoneg
+- name: github.com/prometheus/procfs
+  version: 406e5b7bfd8201a36e2bb5f7bdae0b03380c2ce8
 - name: github.com/Sirupsen/logrus
   version: be52937128b38f1d99787bb476c789e2af1147f1
+- name: golang.org/x/net
+  version: 7f88271ea9913b72aca44fa7fc8af919eacc17ce
+  subpackages:
+  - context
+  - context/ctxhttp
 - name: gopkg.in/airbrake/gobrake.v2
   version: c9d51adc624b5cc4c1bf8de730a09af4878ffe2d
 - name: gopkg.in/gemnasium/logrus-airbrake-hook.v2
