@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -154,6 +153,26 @@ func pageFilesRegularThumbnail(w http.ResponseWriter, r *http.Request, p httprou
 		height = uint(out)
 	}
 
+	cachefile := filepath.Join(FlagFolderCache, p.ByName("path"), values.Get("width"), values.Get("height")+".jpg")
+	if _, err := os.Stat(cachefile); os.IsNotExist(err) {
+		l.Debug("Cachefile does not exist: ", cachefile)
+	} else {
+		l.Debug("Cachefile exists: ", cachefile)
+		cache, err := os.Open(cachefile)
+		if err != nil {
+			l.Warning(errgo.Notef(err, "can not open cachefile from disk"))
+		} else {
+			_, err := io.Copy(w, cache)
+			if err != nil {
+				l.Warning(errgo.Notef(err, "can not copy cache file to response writer"))
+			} else {
+				l.Debug("Served from cachefile")
+				w.Header().Set("Content-Type", "image/jpeg")
+				return nil
+			}
+		}
+	}
+
 	pathfile := path.Join(FlagFolderGallery, p.ByName("path"))
 
 	file, err := os.Open(pathfile)
@@ -180,34 +199,26 @@ func pageFilesRegularThumbnail(w http.ResponseWriter, r *http.Request, p httprou
 	l.Debug("Width: ", width)
 	l.Debug("Height: ", height)
 
-	buffer := new(bytes.Buffer)
+	err = os.MkdirAll(filepath.Dir(cachefile), 0755)
+	if err != nil {
+		return httphelper.NewHandlerErrorDef(errgo.Notef(err, "can not create cache folder"))
+	}
+
+	cache, err := os.Create(cachefile)
+	if err != nil {
+		return httphelper.NewHandlerErrorDef(errgo.Notef(err, "can not open cachefile from disk"))
+	}
+	defer cache.Close()
+
+	writer := io.MultiWriter(w, cache)
+
 	thumbnail := resize.Thumbnail(width, height, img, resize.Lanczos3)
-	err = jpeg.Encode(buffer, thumbnail, nil)
+	err = jpeg.Encode(writer, thumbnail, nil)
 	if err != nil {
 		return httphelper.NewHandlerErrorDef(errgo.Notef(err, "can not encode image to jpeg"))
 	}
 
-	_, err = io.Copy(w, buffer)
-	if err != nil {
-		return httphelper.NewHandlerErrorDef(errgo.Notef(err, "can not copy cache file to response writer"))
-	}
 	w.Header().Set("Content-Type", "image/jpeg")
-
-	go func() {
-		cachefile := filepath.Join(FlagFolderCache, p.ByName("path"), values.Get("width"), values.Get("height")+".jpg")
-
-		err := os.MkdirAll(filepath.Dir(cachefile), 0755)
-		if err != nil {
-			l.Warning(errgo.Notef(err, "can not create cache dir for file"))
-			return
-		}
-
-		err = ioutil.WriteFile(cachefile, buffer.Bytes(), 0644)
-		if err != nil {
-			l.Warning(errgo.Notef(err, "can not write thumbnail to cache"))
-			return
-		}
-	}()
 
 	return nil
 }
